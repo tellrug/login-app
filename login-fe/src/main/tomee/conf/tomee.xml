@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tomee>
+    <Resource id="SHIRO" type="DataSource">
+        JdbcDriver ${h2.database.driver.name}
+        JdbcUrl ${h2.shiro.database.connection.url}
+        UserName ${h2.database.user}
+        Password ${h2.database.password}
+        JtaManaged true
+    </Resource>
+</tomee>

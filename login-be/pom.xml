@@ -1,0 +1,302 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>at.vulperium.login</groupId>
+    <artifactId>login-parent</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <relativePath>../login-parent/pom.xml</relativePath>
+  </parent>
+
+  <groupId>at.vulperium.login</groupId>
+  <artifactId>login-be</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>login-be</name>
+
+  <properties>
+    <shiro.sql.dir>shiro</shiro.sql.dir>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>at.vulperium.login</groupId>
+      <artifactId>login-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- GERONIMO -->
+    <dependency>
+      <groupId>org.apache.geronimo.specs</groupId>
+      <artifactId>geronimo-atinject_1.0_spec</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.geronimo.specs</groupId>
+      <artifactId>geronimo-ejb_3.1_spec</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.geronimo.specs</groupId>
+      <artifactId>geronimo-jcdi_1.0_spec</artifactId>
+    </dependency>
+
+    <!-- DELTASPIKE -->
+    <dependency>
+      <groupId>org.apache.deltaspike.core</groupId>
+      <artifactId>deltaspike-core-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.deltaspike.core</groupId>
+      <artifactId>deltaspike-core-impl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.deltaspike.modules</groupId>
+      <artifactId>deltaspike-jpa-module-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.deltaspike.modules</groupId>
+      <artifactId>deltaspike-jpa-module-impl</artifactId>
+    </dependency>
+
+    <!-- SHIRO -->
+    <dependency>
+      <groupId>org.apache.shiro</groupId>
+      <artifactId>shiro-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.shiro</groupId>
+      <artifactId>shiro-web</artifactId>
+    </dependency>
+
+    <!-- LOGGING -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- openjpa -->
+    <dependency>
+      <groupId>org.apache.openjpa</groupId>
+      <artifactId>openjpa</artifactId>
+      <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.openjpa</groupId>
+          <artifactId>openjpa-jest</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.openjpa</groupId>
+          <artifactId>openjpa-jdbc</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.openjpa</groupId>
+        <artifactId>openjpa-maven-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <!-- create a test jar -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+            <configuration>
+              <includes>
+                <include>**/*TestDataHelper*.class</include>
+                <include>META-INF/beans.xml</include>
+                <include>META-INF/scan.xml</include>
+                <include>**/testdatahelper/**/*.class</include>
+              </includes>
+              <skipIfEmpty>true</skipIfEmpty>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>sql-maven-plugin</artifactId>
+
+        <executions>
+          <execution>
+            <id>clean-shiro-test-database</id>
+            <phase>process-test-classes</phase>
+            <goals>
+              <goal>execute</goal>
+            </goals>
+            <configuration>
+              <url>${h2.shiro.database.connection.url}</url>
+              <onError>continue</onError> <!-- always continue on DROP errors -->
+              <srcFiles>
+                <srcFile>src/main/sql/${database.vendor}/${shiro.sql.dir}/createdb.sql</srcFile>
+              </srcFiles>
+            </configuration>
+          </execution>
+          <execution>
+            <id>setup-shiro-test-database</id>
+            <phase>process-test-classes</phase>
+            <goals>
+              <goal>execute</goal>
+            </goals>
+            <configuration>
+              <url>${h2.shiro.database.connection.url}</url>
+              <onError>abort</onError>
+              <srcFiles>
+                <srcFile>src/main/sql/${database.vendor}/${shiro.sql.dir}/database.sql</srcFile>
+                <!-- wird noch nicht benoetigt
+                <srcFile>src/main/sql/${database.vendor}/${shiro.sql.dir}/schema_delta.sql</srcFile>
+                <srcFile>src/main/sql/${database.vendor}/${shiro.sql.dir}/createindex.sql</srcFile>
+                -->
+              </srcFiles>
+            </configuration>
+          </execution>
+          <execution>
+            <id>setup-shiro-test-triggers</id>
+            <phase>process-test-classes</phase>
+            <goals>
+              <goal>execute</goal>
+            </goals>
+            <configuration>
+              <url>${h2.shiro.database.connection.url}</url>
+              <onError>abort</onError>
+              <srcFiles>
+                <!-- wird noch nicht benoetigt
+                <srcFile>src/main/sql/${database.vendor}/${shiro.sql.dir}/createtriggers.sql</srcFile>
+                -->
+              </srcFiles>
+              <delimiter>/</delimiter>
+              <delimiterType>row</delimiterType>
+            </configuration>
+          </execution>
+          <execution>
+            <id>setup-shiro-testdata</id>
+            <phase>process-test-classes</phase>
+            <goals>
+              <goal>execute</goal>
+            </goals>
+            <configuration>
+              <url>${h2.shiro.database.connection.url}</url>
+              <onError>abort</onError>
+              <orderFile>ascending</orderFile>
+              <fileset>
+                <basedir>${basedir}/</basedir>
+                <includes>
+                  <include>src/test/sql/${database.vendor}/${shiro.sql.dir}/*.sql</include>
+                </includes>
+              </fileset>
+            </configuration>
+          </execution>
+
+        </executions>
+        <!--TODO - maybe we will use here slf4j  -->
+        <dependencies>
+          <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>${log4j.version}</version>
+          </dependency>
+
+          <!-- currently not used -->
+          <!-- <dependency>
+              <groupId>com.oracle</groupId>
+              <artifactId>ojdbc6</artifactId>
+              <version>${oracle.version}</version>
+          </dependency>-->
+          <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>${h2.version}</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>generateSql</id>
+      <!-- generates a full Database schema against the configured database -->
+      <properties>
+        <openjpa.proddiff.dir>${java.io.tmpdir}/openjpa</openjpa.proddiff.dir>
+
+        <openjpa.shiro.createdb.sql>src/main/sql/${database.vendor}/${shiro.sql.dir}/createdb.sql</openjpa.shiro.createdb.sql>
+        <openjpa.shiro.database.sql>src/main/sql/${database.vendor}/${shiro.sql.dir}/database.sql</openjpa.shiro.database.sql>
+
+        <!-- Diffs noch nicht beruecksichtigt
+        <openjpa.proddiff.createdb.sql>${openjpa.proddiff.dir}/createdb-${database.vendor}-${project.version}.sql</openjpa.proddiff.createdb.sql>
+        <openjpa.proddiff.database.sql>${openjpa.proddiff.dir}/database-${database.vendor}-${project.version}.sql</openjpa.proddiff.database.sql>
+        -->
+
+        <!-- means append to existing file. Will only be set to false in the very first backend project in the build chain -->
+        <openjpa.keepsqldifffile>true</openjpa.keepsqldifffile>
+
+        <generate.jpa-excludes/>
+        <jpa-excludes>${generate.jpa-excludes}</jpa-excludes>
+      </properties>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.openjpa</groupId>
+            <artifactId>openjpa-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>shiro-enhance</id>
+                <goals>
+                  <goal>enhance</goal>
+                </goals>
+                <configuration>
+                  <includes>${shiro-jpa-includes}</includes>
+                </configuration>
+              </execution>
+              <execution>
+                <id>generate-shiro-createdb-sql</id>
+                <phase>generate-test-resources</phase>
+                <goals>
+                  <goal>sql</goal>
+                </goals>
+                <configuration>
+                  <includes>${shiro-jpa-includes}</includes>
+                  <skip>${openjpa.skipschemagen}</skip>
+                  <sqlAction>dropSchema</sqlAction>
+                  <sqlFile>${openjpa.shiro.createdb.sql}</sqlFile>
+                </configuration>
+              </execution>
+              <execution>
+                <id>generate-shiro-database-sql</id>
+                <phase>generate-test-sources</phase>
+                <goals>
+                  <goal>sql</goal>
+                </goals>
+                <configuration>
+                  <includes>${shiro-jpa-includes}</includes>
+                  <skip>${openjpa.skipschemagen}</skip>
+                  <sqlAction>build</sqlAction>
+                  <sqlFile>${openjpa.shiro.database.sql}</sqlFile>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+
+</project>
